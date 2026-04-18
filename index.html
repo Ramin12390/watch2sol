@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Watch2Sol</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Supabase JS Client via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Telegram Web App script -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Adsgram SDK -->
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+</head>
+<body>
+    <div id="loader" class="loader-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div id="app" style="display:none;">
+        <!-- HEADER -->
+        <header class="glass-header">
+            <div class="user-info">
+                <div class="avatar" id="user-avatar"><i class="fa-solid fa-user"></i></div>
+                <div class="username"><span id="username-display">User</span></div>
+            </div>
+            <div class="balance-container">
+                <span class="currency">Balance</span>
+                <h1 id="balance-display">$0.000</h1>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT AREA -->
+        <main id="main-content">
+            <!-- HOME TAB -->
+            <section id="tab-home" class="tab-content active">
+                <div class="stats-card glass">
+                    <h3>Your Stats</h3>
+                    <div class="stat-row">
+                        <span>Current Level:</span>
+                        <strong id="lvl-display" class="neon-text">Lvl 0</strong>
+                    </div>
+                    <div class="stat-row">
+                        <span>Earn Per Ad:</span>
+                        <strong id="earn-rate-display" class="neon-text">$0.008</strong>
+                    </div>
+                </div>
+                <div class="action-card text-center" style="margin-top:20px;">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Earn SOL" class="pulse-image" style="width:100px; margin-bottom:10px; filter: drop-shadow(0 0 10px #7b2cbf);">
+                    <p style="color: #ccc;">Start watching short videos to earn Solana directly to your balance.</p>
+                </div>
+            </section>
+
+            <!-- EARN TAB -->
+            <section id="tab-earn" class="tab-content">
+                <h2 class="section-title">Watch & Earn</h2>
+                <div class="earn-container glass">
+                    <div class="ad-icon pulse-image">📺</div>
+                    <p class="ad-desc">Watch an ad completely and get rewarded instantly to your balance.</p>
+                    <p><strong>Reward:</strong> <span id="current-reward-display" class="neon-text-green">$0.008</span></p>
+                    <button id="btn-watch-ad" class="btn-primary mt-2">Watch Ad Now</button>
+                    <p id="ad-status" class="status-msg"></p>
+                </div>
+            </section>
+
+            <!-- UPGRADES TAB -->
+            <section id="tab-upgrades" class="tab-content">
+                <h2 class="section-title">Upgrades</h2>
+                <p style="text-align:center; color:#aaa; margin-bottom:15px; font-size:14px;">Boost your earnings per ad!</p>
+                <div class="upgrades-list" id="upgrades-list">
+                    <!-- Populated by JS -->
+                </div>
+                <p id="upgrade-status" class="status-msg" style="text-align: center; margin-top: 10px;"></p>
+            </section>
+
+            <!-- WALLET TAB (Deposit/Withdraw) -->
+            <section id="tab-wallet" class="tab-content">
+                <div class="wallet-nav">
+                    <button class="wallet-nav-btn active" onclick="switchWalletTab('deposit')" id="nav-btn-deposit">Deposit</button>
+                    <button class="wallet-nav-btn" onclick="switchWalletTab('withdraw')" id="nav-btn-withdraw">Withdraw</button>
+                </div>
+                
+                <!-- DEPOSIT SECTION -->
+                <div id="wallet-deposit" class="wallet-section active glass">
+                    <h3>Top Up Balance</h3>
+                    <p class="subtext">Send Solana or USDT (Solana Network) to the address below to increase your balance for upgrades.</p>
+                    <div class="address-box">
+                        <span id="deposit-address">9Mwo7FUBzV7j7YqgtbUsbEy2GxTRbHptVjg1BkNduZ8S</span>
+                        <button onclick="copyDepositAddress()" class="btn-icon"><i class="fa-solid fa-copy"></i></button>
+                    </div>
+                    
+                    <div class="form-group mt-2">
+                        <label>Amount Delivered ($ Value)</label>
+                        <input type="number" id="deposit-amount" placeholder="e.g. 5" step="0.1" class="input-field">
+                    </div>
+                    <div class="form-group">
+                        <label>Payment Proof (Screenshot max 2MB)</label>
+                        <input type="file" id="deposit-proof" accept="image/*" class="input-field" style="padding:10px;">
+                    </div>
+                    <button class="btn-primary" id="btn-submit-deposit">Submit Deposit</button>
+                    <p id="deposit-status" class="status-msg"></p>
+                </div>
+
+                <!-- WITHDRAW SECTION -->
+                <div id="wallet-withdraw" class="wallet-section" style="display:none;">
+                    <div class="glass" style="padding:20px; border-radius:15px;">
+                        <h3>Cash Out</h3>
+                        <p class="subtext">Minimum withdrawal is $0.50</p>
+                        
+                        <div class="form-group mt-2">
+                            <label>Your SOL Address</label>
+                            <input type="text" id="withdraw-address" placeholder="Enter your Solana address" class="input-field">
+                        </div>
+                        <div class="form-group">
+                            <label>Amount ($)</label>
+                            <input type="number" id="withdraw-amount" placeholder="e.g. 0.50" step="0.1" class="input-field">
+                        </div>
+                        <button class="btn-primary mt-2" id="btn-submit-withdraw">Withdraw Funds</button>
+                        <p id="withdraw-status" class="status-msg"></p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- BOTTOM NAV -->
+        <nav class="bottom-nav glass-nav">
+            <button class="nav-item active" data-target="tab-home">
+                <i class="fa-solid fa-house"></i>
+                <span>Home</span>
+            </button>
+            <button class="nav-item" data-target="tab-earn">
+                <i class="fa-solid fa-play ad-play-icon"></i>
+                <span>Earn</span>
+            </button>
+            <button class="nav-item" data-target="tab-upgrades">
+                <i class="fa-solid fa-bolt"></i>
+                <span>Upgrades</span>
+            </button>
+            <button class="nav-item" data-target="tab-wallet">
+                <i class="fa-solid fa-wallet"></i>
+                <span>Wallet</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/supabaseClient.js"></script>
+    <script src="js/upgrades.js"></script>
+    <script src="js/deposit.js"></script>
+    <script src="js/adsgram.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
